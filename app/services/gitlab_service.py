@@ -19,16 +19,34 @@ class GitLabService:
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     
     async def get_user_groups(self, token: str) -> List[Dict[str, str]]:
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.get(f"{self.base_url}/groups", headers=self._get_headers(token))
-                
-        if response.status_code == 401:
-            raise HTTPException(401, "Invalid access token")
-        if response.status_code != 200:
-            raise HTTPException(502, "GitLab API error")
+        all_groups = []
+        page = 1
         
-        groups_data = response.json()
-        return [{"id": g["id"], "group": g["full_path"]} for g in groups_data]
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            while True:
+                response = await client.get(
+                    f"{self.base_url}/groups",
+                    headers=self._get_headers(token),
+                    params={"page": page, "per_page": 100}
+                )
+                    
+                if response.status_code == 401:
+                    raise HTTPException(401, "Invalid access token")
+                if response.status_code != 200:
+                    raise HTTPException(502, "GitLab API error")
+                
+                groups_data = response.json()
+                if not groups_data:
+                    break
+                    
+                all_groups.extend([{"id": g["id"], "group": g["full_path"]} for g in groups_data])
+                
+                if len(groups_data) < 100:
+                    break
+                    
+                page += 1
+        
+        return all_groups
     
     async def create_repository(self, token: str, repo_data: Dict) -> Tuple[str, int]:
         payload = {
