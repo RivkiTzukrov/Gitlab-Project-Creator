@@ -6,17 +6,16 @@ from app.api.routes import router
 from app.core.config import settings
 from app.core.logger import setup_logging
 
-logger = setup_logging()
+setup_logging()
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="GitLab Repository Sculptor")
     app.include_router(router)
     
-    # Secure CORS configuration
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:8080"],  # Add your frontend URLs
+        allow_origins=["http://localhost:3000", "http://localhost:8080"],
         allow_credentials=True,
         allow_methods=["GET", "POST"],
         allow_headers=["Authorization", "Content-Type"],

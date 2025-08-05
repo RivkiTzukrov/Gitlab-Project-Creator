@@ -1,10 +1,14 @@
-from typing import Dict
+import logging
+from typing import Dict, Optional
 
 import boto3
+from botocore.exceptions import ClientError
 from fastapi import HTTPException
 from jinja2 import BaseLoader, Environment
 
 from app.schemas.repo_models import Stack
+
+logger = logging.getLogger(__name__)
 
 
 class TemplateProcessor:
@@ -16,18 +20,23 @@ class TemplateProcessor:
     }
     
     def __init__(self, s3_bucket: str, s3_region: str):
-        self.s3 = boto3.client("s3", region_name=s3_region)
         self.bucket = s3_bucket
+        self.s3_client = boto3.client("s3", region_name=s3_region)
         self.jinja_env = Environment(loader=BaseLoader())
 
-    async def get_project_files(self, project_type: str, repo_name: str, stack: Stack = None) -> Dict[str, str]:
+    async def get_project_files(
+        self, 
+        project_type: str, 
+        repo_name: str, 
+        stack: Optional[Stack] = None
+    ) -> Dict[str, str]:
         files = {}
         stack_name = stack.value if stack else ""
         
         # CI file
-        ci_template = f"templates/{project_type}/{stack_name}.gitlab-ci.yml"
         files[".gitlab-ci.yml"] = await self._process_template(
-            ci_template, {"repo_name": repo_name, "stack": stack_name}
+            f"templates/{project_type}/{stack_name}.gitlab-ci.yml",
+            {"repo_name": repo_name, "stack": stack_name}
         )
         
         # Stack-specific files
@@ -50,7 +59,7 @@ class TemplateProcessor:
         )
         files[".gitignore"] = await self._get_template(gitignore_path)
         
-        # Helm files for monorepo/delivery
+        # Helm files for deployment projects
         if project_type in ["monorepo", "delivery"]:
             for helm_file in ["Chart.yaml", "values.yaml"]:
                 content = await self._process_template(
@@ -66,16 +75,17 @@ class TemplateProcessor:
         )
         
         return files
-
-    async def _process_template(self, s3_key: str, replacements: Dict) -> str:
-        """Get and process a template with replacements"""
-        raw = await self._get_template(s3_key)
-        template = self.jinja_env.from_string(raw)
-        return template.render(**replacements)
-
+    
+    async def _process_template(self, s3_key: str, variables: Dict) -> str:
+        raw_template = await self._get_template(s3_key)
+        template = self.jinja_env.from_string(raw_template)
+        return template.render(**variables)
+    
     async def _get_template(self, s3_key: str) -> str:
         try:
-            response = self.s3.get_object(Bucket=self.bucket, Key=s3_key)
+            response = self.s3_client.get_object(Bucket=self.bucket, Key=s3_key)
             return response["Body"].read().decode("utf-8")
-        except Exception as e:
-            raise HTTPException(500, f"Template not found: {s3_key}")
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchKey":
+                raise HTTPException(404, f"Template not found: {s3_key}")
+            raise HTTPException(500, f"Failed to fetch template: {s3_key}")
