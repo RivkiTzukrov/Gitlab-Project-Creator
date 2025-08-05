@@ -34,11 +34,17 @@ class ProjectCreator:
             # Add files to repository
             await self.gitlab.add_files(token, project_id, files)
             
+            # Set cluster variables for monorepo/delivery projects
+            if repo_data.project_type in ["monorepo", "delivery"] and repo_data.clusters:
+                cluster_vars = self._create_cluster_variables(repo_data.clusters)
+                await self.gitlab.set_project_variables(token, project_id, cluster_vars)
+            
             return {
                 "status": "success",
                 "repo_url": repo_url,
                 "project_id": project_id,
                 "files_created": list(files.keys()),
+                "variables_created": list(cluster_vars.keys()) if repo_data.clusters else [],
                 "message": "Project created successfully"
             }
             
@@ -49,3 +55,13 @@ class ProjectCreator:
                 # TODO: Add cleanup logic to delete the repository
                 pass
             raise HTTPException(500, f"Project creation failed: {str(e)}")
+    
+    def _create_cluster_variables(self, clusters) -> Dict[str, str]:
+        """Create GitLab CI variables from cluster configurations"""
+        variables = {}
+        for cluster in clusters:
+            # Create variables like: DEV_CLUSTER_NAME, DEV_ENVIRONMENT
+            prefix = cluster.environment.upper()
+            variables[f"{prefix}_CLUSTER_NAME"] = cluster.name
+            variables[f"{prefix}_ENVIRONMENT"] = cluster.environment
+        return variables
