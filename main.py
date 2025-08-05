@@ -1,7 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
 
 from app.api.routes import router
 from app.core.config import settings
@@ -11,20 +10,18 @@ logger = setup_logging()
 
 
 def create_app() -> FastAPI:
-    """
-    Create and configure the FastAPI application.
-    """
-    app = FastAPI()
+    app = FastAPI(title="GitLab Repository Sculptor")
     app.include_router(router)
+    
+    # Secure CORS configuration
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=["http://localhost:3000", "http://localhost:8080"],  # Add your frontend URLs
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST"],
+        allow_headers=["Authorization", "Content-Type"],
     )
-    # If you use templates, ensure the directory exists
-    Jinja2Templates(directory="app/templates")
+    
     return app
 
 

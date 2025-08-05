@@ -1,13 +1,14 @@
 import logging
-from typing import Any, Dict
+from typing import Dict, List, Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.core.config import settings
-from app.schemas.repo_models import GenerateRepoRequest
-from app.services.gitlab_service import get_user_groups
+from app.schemas.repo_models import RepoRequest
+from app.services.gitlab_service import GitLabService
 from app.services.project_creator import ProjectCreator
 
 logger = logging.getLogger("gitlab_repo_sculptor")
@@ -73,75 +74,25 @@ async def callback(request: Request) -> JSONResponse:
     return JSONResponse(content=token_response.json())
 
 
+bearer_scheme = HTTPBearer()
+
+def get_current_token(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
+    return credentials.credentials
+
 @router.get("/groups")
-async def groups(access_token: str) -> JSONResponse:
+async def get_groups(token: str = Depends(get_current_token)) -> Dict[str, List[Dict]]:
     """Returns the groups the user has access to."""
-    try:
-        groups = await get_user_groups(access_token)
-        if groups is None:
-            return JSONResponse(
-                status_code=401,
-                content={"error": "Unauthorized or invalid access token."},
-            )
-        return JSONResponse(content={"groups": groups})
-    except httpx.RequestError as exc:
-        logger.error(f"HTTPX error during group fetch: {exc}")
-        return JSONResponse(
-            status_code=502, content={"error": "Failed to contact GitLab for groups."}
-        )
-    except Exception as e:
-        logger.error(f"Unexpected error during group fetch: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"error": "Internal server error while fetching groups."},
-        )
+    gitlab = GitLabService()
+    groups = await gitlab.get_user_groups(token)
+    return {"groups": groups}
 
 
 @router.post("/generate-repo")
-async def generate_repo(repo_data: GenerateRepoRequest) -> JSONResponse:
-    """Generates a new repository in GitLab with the specified configuration."""
-    try:
-        # Validate project type specific requirements
-        if (
-            repo_data.repo.project_type in ["library", "microservice"]
-            and not repo_data.repo.stack
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail=f"{repo_data.repo.project_type} requires a stack to be specified",
-            )
-
-        if (
-            repo_data.repo.project_type in ["monorepo", "delivery"]
-            and not repo_data.repo.deployment_clusters
-        ):
-            raise HTTPException(
-                status_code=400,
-                detail=f"{repo_data.repo.project_type} requires at least one cluster configuration",
-            )
-
-        project_creator = ProjectCreator()
-
-        repo_dict = repo_data.repo.dict()
-        repo_dict["access_token"] = repo_data.access_token
-
-        result = await project_creator.create_project(repo_data=repo_dict)
-
-        return JSONResponse(
-            status_code=201,
-            content={
-                "status": "success",
-                "repo_url": result["repo_url"],
-                "project_id": result["project_id"],
-                "files_created": result["files_created"],
-                "message": "Project created and initialized successfully",
-            },
-        )
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Unexpected error during project creation: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error while creating project: {str(e)}",
-        )
+async def create_repo(
+    repo_data: RepoRequest, 
+    token: str = Depends(get_current_token)
+) -> Dict:
+    """Creates and initializes a new GitLab repository."""
+    creator = ProjectCreator()
+    result = await creator.create_project(token, repo_data)
+    return result
