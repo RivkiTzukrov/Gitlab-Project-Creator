@@ -27,7 +27,7 @@ class ProjectCreator:
             # Generate template files
             files = await self.template_processor.get_project_files(
                 project_type=repo_request.project_type,
-                repo_name=repo_request.project_name,
+                repo_name=repo_request.sanitized_name,
                 stack=repo_request.stack
             )
             

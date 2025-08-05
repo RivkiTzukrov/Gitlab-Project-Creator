@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 
 class Stack(Enum):
@@ -23,16 +23,14 @@ class RepoRequest(BaseModel):
     stack: Optional[Stack] = None
     clusters: Optional[List[ClusterConfig]] = None
     
-    @validator('project_name')
-    def sanitize_project_name(cls, v):
-        # Convert to lowercase, replace spaces with hyphens, remove invalid chars
-        sanitized = v.lower().replace(' ', '-')
+
+    
+    @property
+    def sanitized_name(self) -> str:
+        """Get sanitized version for templates and file names"""
+        sanitized = self.project_name.lower().replace(' ', '-')
         sanitized = ''.join(c for c in sanitized if c.isalnum() or c in '-_')
-        # Remove consecutive hyphens and trim
-        sanitized = '-'.join(filter(None, sanitized.split('-')))
-        if not sanitized:
-            raise ValueError("Project name must contain at least one alphanumeric character")
-        return sanitized
+        return '-'.join(filter(None, sanitized.split('-')))
     
     def validate_requirements(self):
         if self.project_type in ["library", "microservice"] and not self.stack:
