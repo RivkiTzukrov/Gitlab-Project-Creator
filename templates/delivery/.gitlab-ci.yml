@@ -1,0 +1,14 @@
+# You must customize the following variables:
+# - DOCKER_REPOSITORY: ...
+
+variables:
+  DOCKER_NAME: {{ repo_name }}
+  DOCKER_REPOSITORY: your-docker-repo  # TODO: Replace with actual Docker registry
+  UPDATE_IMAGE_TAG: .{{repo_name}}.deployment.image.tag
+
+include:
+  - project: 'gitlab-ci-templates/helm'
+    ref: main
+    file:
+      - 'templates/helm-jobs.yml'
+      - 'templates/deploy.yml'

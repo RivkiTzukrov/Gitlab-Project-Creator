@@ -1,0 +1,21 @@
+# Maven target directory
+target/
+
+# Compiled class files
+*.class
+
+# JAR, WAR, EAR files
+*.jar
+*.war
+*.ear
+
+# IntelliJ IDEA files
+.idea/
+
+# Logs
+*.log
+
+# Eclipse files
+.project
+.classpath
+.settings/

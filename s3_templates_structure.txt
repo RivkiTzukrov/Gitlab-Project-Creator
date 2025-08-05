@@ -1,0 +1,50 @@
+s3://your-bucket/templates/
+  ├── common/
+  │   └── build/
+  │       ├── .dockerignore
+  │       └── Dockerfiles/
+  │           ├── maven.Dockerfile
+  │           ├── node.Dockerfile
+  │           ├── python.Dockerfile
+  │           └── dotnet.Dockerfile
+  │   ├── gitignore/
+  │   │   ├── maven.gitignore
+  │   │   ├── node.gitignore
+  │   │   ├── python.gitignore
+  │   │   ├── dotnet.gitignore
+  │   │   └── .gitignore
+  │   ├── configs/
+  │   │   ├── settings.xml
+  │   │   ├── .npmrc
+  │   │   ├── pip.ini
+  │   │   └── nuget.config
+  │   └── README.md.j2
+
+  ├── library/
+  │   ├── maven.gitlab-ci.yml
+  │   ├── node.gitlab-ci.yml
+  │   ├── python.gitlab-ci.yml
+  │   └── dotnet.gitlab-ci.yml
+  ├── microservice/
+  │   ├── maven.gitlab-ci.yml
+  │   ├── node.gitlab-ci.yml
+  │   ├── python.gitlab-ci.yml
+  │   └── dotnet.gitlab-ci.yml
+  ├── monorepo/
+  │   ├── maven.gitlab-ci.yml
+  │   ├── node.gitlab-ci.yml
+  │   ├── python.gitlab-ci.yml
+  │   ├── dotnet.gitlab-ci.yml
+  │   └── helm/
+  │       ├── Chart.yaml
+  │       └── values.yaml
+  └── delivery/
+      ├── .gitlab-ci.yml
+      └── helm/
+          ├── Chart.yaml
+          └── values.yaml
+
+# Hide acceess token in URL
+# Deployment cluster - add gitlab variables for cluster access token
+# What happen if the process of initializing a repo fails,
+  but the repo has already bean created?

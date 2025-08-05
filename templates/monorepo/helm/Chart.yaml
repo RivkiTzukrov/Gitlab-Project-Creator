@@ -1,0 +1,13 @@
+apiVersion: v2
+name: {{ repo_name }}
+description: Helm chart for {{ repo_name }}
+
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: common-library
+    alias: {{ repo_name }}  # alias to reference in values.yaml
+    version: 1.2.0
+    repository: https://charts.my-org.com

@@ -1,0 +1,21 @@
+# Common files to ignore
+*.DS_Store
+*.swp
+*.bak
+*.tmp
+
+# Version control
+.git
+.gitignore
+
+# OS-specific
+Thumbs.db
+ehthumbs.db
+Icon?
+
+# Editor-specific
+.idea/
+.vscode/
+
+# Helm test output and backup files
+*.tgz

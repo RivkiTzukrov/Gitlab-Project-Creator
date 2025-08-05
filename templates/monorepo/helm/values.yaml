@@ -1,0 +1,16 @@
+{{ repo_name }}:
+  deployment:
+    image:
+      repository: <docker-repository-name>  # TODO: Replace with your real Docker image repo
+      tag: ""  # this will be overridden in the pipeline
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 256Mi
+      requests:
+        cpu: 250m
+        memory: 128Mi
+    env: []
+    secrets: []
+    configMaps: []

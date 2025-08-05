@@ -1,0 +1,16 @@
+apiVersion: v2
+name: {{ repo_name }}-delivery
+description: Delivery Helm chart used to group microservices for system {{ repo_name }}
+
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+# 📝 NOTE:
+# Add each microservice as a dependency below.
+# For example, if your system has 5 services, declare them here with proper versions and sources.
+dependencies:
+#   - name: common-library
+#     alias: {{ service-a }}  # alias to reference in values.yaml
+#     version: 1.2.0
+#     repository: https://charts.my-org.com

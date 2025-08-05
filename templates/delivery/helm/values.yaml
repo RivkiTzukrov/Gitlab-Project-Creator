@@ -1,0 +1,21 @@
+# 📝 NOTE:
+# This file is a template for setting values for each microservice listed as a dependency in Chart.yaml.
+
+# Example structure:
+#   deployment:
+#     image:
+#       repository: <docker-repository-for-service-a>  # Replace with actual image repo
+#       tag: ""  # this will be overridden in the pipeline
+#     replicaCount: 1
+#     resources:
+#       limits:
+#         cpu: 500m
+#         memory: 256Mi
+#       requests:
+#         cpu: 250m
+#         memory: 128Mi
+#     env: []
+#     secrets: []
+#     configMaps: []
+
+# Add your microservice values below:
