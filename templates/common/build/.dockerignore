@@ -1,0 +1,41 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv/
+env/
+venv/
+
+# Packaging
+dist/
+*.egg-info/
+
+# Logs
+*.log
+
+# Docker
+Dockerfile
+.dockerignore
+
+# IDEs & Editors
+.vscode/
+.idea/
+
+# Test & coverage
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+
+# Git
+.git/
+.gitignore
+.gitmodules
+.gitlab-ci.yml
+
+# Misc
+*.swp
+.DS_Store
