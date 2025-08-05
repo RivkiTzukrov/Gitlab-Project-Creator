@@ -21,7 +21,19 @@ class TemplateProcessor:
     
     def __init__(self, s3_bucket: str, s3_region: str):
         self.bucket = s3_bucket
-        self.s3_client = boto3.client("s3", region_name=s3_region)
+        
+        # Configure S3 client for private instance
+        s3_config = {
+            "region_name": s3_region,
+            "aws_access_key_id": settings.aws_access_key_id,
+            "aws_secret_access_key": settings.aws_secret_access_key,
+        }
+        
+        # Add custom endpoint if specified
+        if hasattr(settings, 's3_endpoint_url') and settings.s3_endpoint_url:
+            s3_config["endpoint_url"] = settings.s3_endpoint_url
+            
+        self.s3_client = boto3.client("s3", **s3_config)
         self.jinja_env = Environment(loader=BaseLoader())
 
     async def get_project_files(

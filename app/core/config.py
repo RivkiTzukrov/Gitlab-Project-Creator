@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     gitlab_url: str = "https://gitlab.com/api/v4"
     s3_bucket: str = "your-bucket"
     s3_region: str = "us-east-1"
+    s3_endpoint_url: str = None  # Set to your private S3 endpoint
+    aws_access_key_id: str
+    aws_secret_access_key: str
     log_level: str = "INFO"
     port: int = 8000
     gitlab_client_id: str
