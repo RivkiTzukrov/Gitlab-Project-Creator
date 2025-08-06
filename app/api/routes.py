@@ -3,8 +3,8 @@ from typing import Dict, List
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Security
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import settings
 from app.schemas.repo_models import RepoRequest
@@ -16,7 +16,9 @@ router = APIRouter()
 bearer_scheme = HTTPBearer()
 
 
-def get_access_token(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)) -> str:
+def get_access_token(
+    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
+) -> str:
     return credentials.credentials
 
 
@@ -63,18 +65,20 @@ async def handle_oauth_callback(request: Request) -> JSONResponse:
                 },
                 headers={"Accept": "application/json"},
             )
-            
+
         if response.status_code != 200:
             raise HTTPException(response.status_code, "Token exchange failed")
-            
+
         return JSONResponse(content=response.json())
-        
+
     except httpx.RequestError:
         raise HTTPException(502, "Unable to contact GitLab")
 
 
 @router.get("/groups")
-async def get_user_groups(token: str = Depends(get_access_token)) -> Dict[str, List[Dict]]:
+async def get_user_groups(
+    token: str = Depends(get_access_token),
+) -> Dict[str, List[Dict]]:
     gitlab_service = GitLabService()
     groups = await gitlab_service.get_user_groups(token)
     return {"groups": groups}
@@ -82,8 +86,7 @@ async def get_user_groups(token: str = Depends(get_access_token)) -> Dict[str, L
 
 @router.post("/generate-repo")
 async def create_repository(
-    repo_request: RepoRequest, 
-    token: str = Depends(get_access_token)
+    repo_request: RepoRequest, token: str = Depends(get_access_token)
 ) -> Dict:
     project_creator = ProjectCreator()
     return await project_creator.create_project(token, repo_request)

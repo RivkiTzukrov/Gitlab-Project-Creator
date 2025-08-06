@@ -1,177 +1,115 @@
 # GitLab Repository Sculptor
 
-A FastAPI-based service that automatically creates and initializes GitLab repositories with pre-configured templates based on project type and technology stack.
+FastAPI service that automatically creates GitLab repositories with pre-configured templates based on project type and technology stack.
 
 ## Features
 
-- **OAuth Integration**: Secure GitLab OAuth authentication
-- **Multi-Stack Support**: Maven, Node.js, Python, and .NET projects
-- **Project Types**: Library, Microservice, Monorepo, and Delivery projects
-- **Template Management**: S3-based template storage with Jinja2 processing
-- **Automated Setup**: Complete repository initialization with CI/CD, Dockerfiles, and configuration files
+- **GitLab OAuth Authentication** - Secure token-based authentication
+- **Multi-Stack Support** - Maven, Node.js, Python, .NET projects
+- **Project Templates** - Library, Microservice, Monorepo, Delivery types
+- **S3 Template Storage** - Jinja2-processed templates with custom delimiters
+- **CI/CD Variables** - Automatic cluster configuration for deployment projects
+- **Private S3 Support** - Works with internal S3-compatible services
 
 ## Quick Start
 
 ### Prerequisites
 
 - Python 3.8+
-- GitLab account with OAuth application configured
-- AWS S3 bucket with project templates
-- Environment variables configured
+- GitLab OAuth application
+- S3 bucket with templates
+- Environment variables
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd backend
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
 ```
 
-### Environment Configuration
+### Configuration
 
-Create a `.env` file with the following variables:
+Create `.env` file:
 
 ```env
-GITLAB_CLIENT_ID=your_gitlab_client_id
-GITLAB_CLIENT_SECRET=your_gitlab_client_secret
+GITLAB_CLIENT_ID=your_client_id
+GITLAB_CLIENT_SECRET=your_client_secret
 GITLAB_REDIRECT_URI=http://localhost:8000/callback
-GITLAB_TOKEN_URL=https://gitlab.com/oauth/token
 S3_BUCKET=your-templates-bucket
-S3_REGION=us-east-1
-LOG_LEVEL=INFO
-PORT=8000
+S3_ENDPOINT_URL=https://your-s3-endpoint  # Optional for private S3
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
 ```
 
-### Running the Application
+### Run
 
 ```bash
-# Development mode
 python main.py
-
-# Production mode
-uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-## API Endpoints
+## API Usage
 
 ### Authentication
 
-#### `GET /login`
-Redirects to GitLab OAuth login page.
+1. **GET /login** - Redirect to GitLab OAuth
+2. **GET /callback** - Handle OAuth callback, get access token
 
-#### `GET /callback`
-Handles OAuth callback and returns access token.
+### Repository Operations
 
-**Response:**
+**GET /groups** - Get user's GitLab groups
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:8000/groups
+```
+
+**POST /generate-repo** - Create repository with templates
 ```json
 {
-  "access_token": "gitlab_access_token",
-  "token_type": "Bearer",
-  "expires_in": 7200
+  "project_name": "My Project",
+  "group_id": "123",
+  "project_type": "microservice",
+  "stack": "python",
+  "clusters": [{"name": "dev-cluster", "environment": "dev"}]
 }
 ```
 
-### Repository Management
+## Project Types
 
-#### `GET /groups`
-Retrieves user's accessible GitLab groups.
-
-**Query Parameters:**
-- `access_token` (string): GitLab access token
-
-**Response:**
-```json
-{
-  "groups": [
-    {"id": 123, "group": "my-organization/team"}
-  ]
-}
-```
-
-#### `POST /generate-repo`
-Creates and initializes a new GitLab repository.
-
-**Request Body:**
-```json
-{
-  "access_token": "gitlab_access_token",
-  "repo": {
-    "project_name": "my-new-project",
-    "group_id": "123",
-    "project_type": "microservice",
-    "stack": "python",
-    "deployment_clusters": [
-      {"name": "dev", "environment": "development"}
-    ]
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "status": "success",
-  "repo_url": "https://gitlab.com/group/project",
-  "project_id": 456,
-  "files_created": [".gitlab-ci.yml", "Dockerfile", "README.md"],
-  "message": "Project created and initialized successfully"
-}
-```
-
-## Project Types & Stacks
-
-### Supported Project Types
-
-| Type | Description | Required Fields |
-|------|-------------|----------------|
-| `library` | Reusable code library | `stack` |
+| Type | Description | Requirements |
+|------|-------------|-------------|
+| `library` | Code library | `stack` |
 | `microservice` | Standalone service | `stack` |
-| `monorepo` | Multi-service repository | `deployment_clusters` |
-| `delivery` | Deployment configuration | `deployment_clusters` |
+| `monorepo` | Multi-service repo | `clusters` |
+| `delivery` | Deployment config | `clusters` |
 
-### Supported Technology Stacks
+## Template System
 
-- **Maven** (`maven`): Java projects with Maven build system
-- **Node.js** (`node`): JavaScript/TypeScript projects with npm
-- **Python** (`python`): Python projects with pip
-- **.NET** (`dotnet`): C# projects with NuGet
+Templates use Jinja2 with custom delimiters to avoid conflicts with Helm:
+- **Jinja2 variables**: `{% variable_name %}`
+- **Jinja2 blocks**: `{# if condition #}`
+- **Helm variables**: `{{ .Values.name }}` (unchanged)
 
-## Template Structure
-
-Templates are stored in S3 with the following structure:
+### S3 Structure
 
 ```
 templates/
 ├── common/
-│   ├── config/           # Stack-specific config files
-│   ├── build/           # Dockerfiles and build configs
-│   └── gitignore/       # Stack-specific .gitignore files
+│   ├── configs/          # Stack configs (settings.xml, .npmrc, etc.)
+│   ├── build/           # Dockerfiles and .dockerignore
+│   ├── gitignore/       # Stack-specific .gitignore files
+│   └── README.md.j2     # Common README template
 ├── library/             # Library project templates
-├── microservice/        # Microservice project templates
-├── monorepo/           # Monorepo project templates
-└── delivery/           # Delivery project templates
+├── microservice/        # Microservice templates
+├── monorepo/           # Monorepo templates with Helm charts
+└── delivery/           # Delivery templates with Helm charts
 ```
 
 ## Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   FastAPI       │    │  ProjectCreator  │    │ TemplateProcessor│
-│   Routes        │───▶│  Service         │───▶│   (S3 + Jinja2) │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │
-         ▼                        ▼
-┌─────────────────┐    ┌──────────────────┐
-│   GitLab        │    │   AWS S3         │
-│   API Service   │    │   Templates      │
-└─────────────────┘    └──────────────────┘
+FastAPI Routes → ProjectCreator → TemplateProcessor → S3 Templates
+                      ↓               ↓
+                 GitLabService → GitLab API (repos, files, variables)
 ```
 
 ## Development
@@ -179,66 +117,22 @@ templates/
 ### Project Structure
 
 ```
-backend/
-├── app/
-│   ├── api/
-│   │   └── routes.py          # FastAPI route definitions
-│   ├── core/
-│   │   ├── config.py          # Application configuration
-│   │   └── logger.py          # Logging setup
-│   ├── schemas/
-│   │   └── repo_models.py     # Pydantic models
-│   └── services/
-│       ├── gitlab_service.py  # GitLab API integration
-│       ├── project_creator.py # Project orchestration
-│       └── template_processor.py # Template processing
-├── main.py                    # Application entry point
-├── requirements.txt           # Python dependencies
-└── .env                      # Environment variables
+app/
+├── api/routes.py           # FastAPI endpoints
+├── core/config.py          # Settings and environment
+├── schemas/repo_models.py  # Pydantic models
+└── services/
+    ├── gitlab_service.py   # GitLab API client
+    ├── project_creator.py  # Main orchestration
+    └── template_processor.py # S3 + Jinja2 processing
 ```
 
-### Adding New Project Types
+### Adding Features
 
-1. Create template directory in S3: `templates/{project_type}/`
-2. Add templates for CI/CD, README, and Helm charts
-3. Update validation logic in `routes.py`
-4. Add project type to `repo_models.py`
-
-### Adding New Technology Stacks
-
-1. Add stack to `StackType` enum in `repo_models.py`
-2. Update `_SUPPORTED_STACKS` in `template_processor.py`
-3. Add stack-specific templates to S3:
-   - `templates/common/config/{stack}.config`
-   - `templates/common/build/Dockerfiles/{stack}.Dockerfile`
-   - `templates/common/gitignore/{stack}.gitignore`
-
-## Error Handling
-
-The API returns standard HTTP status codes:
-
-- `200` - Success
-- `400` - Bad Request (validation errors)
-- `401` - Unauthorized (invalid token)
-- `403` - Forbidden (insufficient permissions)
-- `500` - Internal Server Error
-- `502` - Bad Gateway (external service error)
-
-## Security
-
-- OAuth 2.0 authentication with GitLab
-- Access tokens for API authorization
-- Input validation with Pydantic models
-- CORS configuration for web clients
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+**New Stack**: Add to `Stack` enum and create templates in S3
+**New Project Type**: Add to model and create template directory
+**New Template**: Upload to S3 with `.j2` suffix for processing
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
