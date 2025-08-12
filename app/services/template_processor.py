@@ -3,10 +3,10 @@ from typing import Dict, Optional
 
 import boto3
 from botocore.exceptions import ClientError
-from fastapi import HTTPException
 from jinja2 import BaseLoader, Environment
 
 from app.core.config import settings
+from app.core.exceptions import TemplateProcessingError
 from app.schemas.repo_models import Stack
 
 logger = logging.getLogger(__name__)
@@ -101,9 +101,17 @@ class TemplateProcessor:
         return files
 
     async def _process_template(self, s3_key: str, variables: Dict) -> str:
-        raw_template = await self._get_template(s3_key)
-        template = self.jinja_env.from_string(raw_template)
-        return template.render(**variables)
+        try:
+            raw_template = await self._get_template(s3_key)
+            template = self.jinja_env.from_string(raw_template)
+            return template.render(**variables)
+        except TemplateProcessingError:
+            raise
+        except Exception as e:
+            details = {"template": s3_key, "variables": list(variables.keys()), "error": str(e)}
+            if "Could not connect" in str(e) or "endpoint" in str(e).lower():
+                raise TemplateProcessingError("S3 connection failed - check configuration", 500, details)
+            raise TemplateProcessingError(f"Template processing failed: {s3_key}", 500, details)
 
     async def _get_template(self, s3_key: str) -> str:
         try:
@@ -111,6 +119,12 @@ class TemplateProcessor:
             return response["Body"].read().decode("utf-8")
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
+            details = {"error_code": error_code}
             if error_code == "NoSuchKey":
-                raise HTTPException(404, f"Template not found: {s3_key}")
-            raise HTTPException(500, f"S3 error: {error_code}")
+                raise TemplateProcessingError(f"Template not found: {s3_key}", 404, details)
+            raise TemplateProcessingError(f"S3 error: {error_code}", 500, details)
+        except Exception as e:
+            details = {}
+            if "Could not connect" in str(e) or "endpoint" in str(e).lower():
+                raise TemplateProcessingError("S3 connection failed - check configuration", 500, details)
+            raise TemplateProcessingError(f"Failed to load template: {s3_key}", 500, details)

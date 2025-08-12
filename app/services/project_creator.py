@@ -1,9 +1,8 @@
 import logging
 from typing import Dict, List
 
-from fastapi import HTTPException
-
 from app.core.config import settings
+from app.core.exceptions import ValidationError
 from app.schemas.repo_models import ClusterConfig, RepoRequest
 from app.services.gitlab_service import GitLabService
 from app.services.template_processor import TemplateProcessor
@@ -19,11 +18,10 @@ class ProjectCreator:
         )
 
     async def create_project(self, token: str, repo_request: RepoRequest) -> Dict:
-        # Validate requirements
         try:
             repo_request.validate_requirements()
         except ValueError as e:
-            raise HTTPException(400, str(e))
+            raise ValidationError(str(e))
 
         try:
             # Generate template files
@@ -61,10 +59,9 @@ class ProjectCreator:
                 "message": "Project created successfully",
             }
 
-        except HTTPException:
-            raise
         except Exception as e:
-            raise HTTPException(500, f"Project creation failed: {str(e)}")
+            logger.error(f"Project creation failed: {str(e)}", exc_info=True)
+            raise
 
     def _should_create_cluster_variables(self, repo_request: RepoRequest) -> bool:
         return (

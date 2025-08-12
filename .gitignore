@@ -102,3 +102,6 @@ ENV/
 env/
 venv.bak/
 env.bak/
+
+
+templates/# Local template processor

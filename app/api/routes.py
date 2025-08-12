@@ -2,11 +2,12 @@ import logging
 from typing import Dict, List
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, Security
+from fastapi import APIRouter, Depends, Request, Security
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import settings
+from app.core.exceptions import AuthenticationError, GitLabAPIError
 from app.schemas.repo_models import RepoRequest
 from app.services.gitlab_service import GitLabService
 from app.services.project_creator import ProjectCreator
@@ -50,7 +51,7 @@ def get_oauth_url() -> Dict[str, str]:
 async def handle_oauth_callback(request: Request) -> JSONResponse:
     code = request.query_params.get("code")
     if not code:
-        raise HTTPException(400, "Authorization code missing")
+        raise AuthenticationError("Authorization code missing")
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -67,12 +68,13 @@ async def handle_oauth_callback(request: Request) -> JSONResponse:
             )
 
         if response.status_code != 200:
-            raise HTTPException(response.status_code, "Token exchange failed")
+            error_details = {"gitlab_response": response.json() if response.content else {}}
+            raise GitLabAPIError("Token exchange failed", response.status_code, error_details)
 
         return JSONResponse(content=response.json())
 
-    except httpx.RequestError:
-        raise HTTPException(502, "Unable to contact GitLab")
+    except httpx.RequestError as e:
+        raise GitLabAPIError("Unable to contact GitLab", 502, {"error": str(e)})
 
 
 @router.get("/groups")

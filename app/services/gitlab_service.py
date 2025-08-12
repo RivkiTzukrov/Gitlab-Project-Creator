@@ -3,9 +3,9 @@ import logging
 from typing import Dict, List, Tuple
 
 import httpx
-from fastapi import HTTPException
 
 from app.core.config import settings
+from app.core.exceptions import AuthenticationError, GitLabAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,9 @@ class GitLabService:
                 )
 
                 if response.status_code == 401:
-                    raise HTTPException(401, "Invalid access token")
+                    raise AuthenticationError("Invalid access token")
                 if response.status_code != 200:
-                    raise HTTPException(502, "GitLab API error")
+                    raise GitLabAPIError("Failed to fetch user groups", response.status_code)
 
                 groups_data = response.json()
                 if not groups_data:
@@ -47,6 +47,8 @@ class GitLabService:
                     break
 
                 page += 1
+
+
 
         return all_groups
 
@@ -66,9 +68,10 @@ class GitLabService:
             )
 
         if response.status_code == 401:
-            raise HTTPException(401, "Invalid access token")
+            raise AuthenticationError("Invalid access token")
         if response.status_code != 201:
-            raise HTTPException(400, "Repository creation failed")
+            error_details = {"gitlab_response": response.json() if response.content else {}}
+            raise GitLabAPIError("Repository creation failed", response.status_code, error_details)
 
         repo_data = response.json()
         return repo_data["http_url_to_repo"], repo_data["id"]
@@ -102,9 +105,10 @@ class GitLabService:
             )
 
         if response.status_code == 401:
-            raise HTTPException(401, "Invalid access token")
+            raise AuthenticationError("Invalid access token")
         if response.status_code != 201:
-            raise HTTPException(400, "Failed to initialize repository")
+            error_details = {"gitlab_response": response.json() if response.content else {}}
+            raise GitLabAPIError("Failed to initialize repository", response.status_code, error_details)
 
     async def set_project_variables(
         self, token: str, project_id: int, variables: Dict[str, str]
