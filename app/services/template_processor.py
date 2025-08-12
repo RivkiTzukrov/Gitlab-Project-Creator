@@ -51,7 +51,7 @@ class TemplateProcessor:
 
         # CI file
         files[".gitlab-ci.yml"] = await self._process_template(
-            f"templates/{project_type}/{stack_name}.gitlab-ci.yml",
+            f"templates/{project_type}/{stack_name}.gitlab-ci.yml.j2",
             {"repo_name": repo_name, "stack": stack_name},
         )
 
@@ -82,7 +82,7 @@ class TemplateProcessor:
         if project_type in ["monorepo", "delivery"]:
             for helm_file in ["Chart.yaml", "values.yaml"]:
                 content = await self._process_template(
-                    f"templates/{project_type}/helm/{helm_file}",
+                    f"templates/{project_type}/helm/{helm_file}.j2",
                     {"repo_name": repo_name},
                 )
                 files[f"helm/{helm_file}"] = content
@@ -110,6 +110,7 @@ class TemplateProcessor:
             response = self.s3_client.get_object(Bucket=self.bucket, Key=s3_key)
             return response["Body"].read().decode("utf-8")
         except ClientError as e:
-            if e.response["Error"]["Code"] == "NoSuchKey":
+            error_code = e.response["Error"]["Code"]
+            if error_code == "NoSuchKey":
                 raise HTTPException(404, f"Template not found: {s3_key}")
-            raise HTTPException(500, f"Failed to fetch template: {s3_key}")
+            raise HTTPException(500, f"S3 error: {error_code}")
