@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic_settings import BaseSettings
 
 
@@ -10,8 +11,8 @@ class Settings(BaseSettings):
     s3_bucket: str = "your-bucket"
     s3_region: str = "us-east-1"
     s3_endpoint_url: str = ""  # Set to your private S3 endpoint
-    aws_access_key_id: str = ""
-    aws_secret_access_key: str = ""
+    aws_access_key_id: str = "123"
+    aws_secret_access_key: str = "123"
     log_level: str = "INFO"
     port: int = 8000
     gitlab_client_id: str = ""

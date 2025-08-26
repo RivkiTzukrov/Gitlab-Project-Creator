@@ -1,4 +1,4 @@
-import uvicorn
+from uvicorn import run
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
@@ -42,4 +42,4 @@ def create_app() -> FastAPI:
 app = create_app()
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=settings.port, reload=True)
+    run("main:app", host="127.0.0.1", port=settings.port, reload=True)

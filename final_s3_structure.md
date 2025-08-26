@@ -1,11 +1,12 @@
-# GitLab Repository Templates
+# Final S3 Template Structure
 
-Template collection for GitLab Repository Sculptor - automatically synced to S3 bucket.
+## Overview
+This structure provides complete project scaffolding with stack-specific base structures and project-type-specific configurations.
 
-## Structure
+## S3 Directory Structure
 
 ```
-templates/
+s3://your-bucket/templates/
 ├── stacks/                           # Complete project structures per stack
 │   ├── maven/                        # All files for Maven projects
 │   │   ├── pom.xml.j2               # Maven project file
@@ -107,46 +108,33 @@ templates/
     └── README.md.j2                 # Common README template
 ```
 
-## Template Syntax
+## File Processing Logic
 
-**Jinja2 Variables**: `{% variable_name %}`
-**Jinja2 Blocks**: `{# if condition #}...{# endif #}`
-**Helm Variables**: `{{ .Values.name }}` (unchanged)
+### Template Files (.j2)
+- Processed with Jinja2 using custom delimiters
+- Variables: `{% repo_name %}`, `{% stack %}`, `{% project_type %}`
+- Blocks: `{# if condition #}` ... `{# endif #}`
 
-### Available Variables
+### Static Files
+- Copied as-is without processing
+- Config files, gitignore, dockerignore, etc.
 
-- `{% repo_name %}` - Sanitized repository name (lowercase, hyphens)
-- `{% stack %}` - Technology stack (maven, node, python, dotnet)
-- `{% project_type %}` - Project type (library, microservice, monorepo, delivery)
+### Dynamic Paths
+- `{repo_name}` in paths gets replaced with actual repo name
+- Example: `src/{repo_name}/` becomes `src/my-project/`
 
-## File Processing
+## Repository Generation Flow
 
-**Processed with Jinja2** (`.j2` suffix):
-- `README.md.j2`
-- `Chart.yaml.j2` 
-- `values.yaml.j2`
-- `.gitlab-ci.yml.j2` files
+1. **Stack Structure**: All files from `templates/stacks/{stack}/` are added
+2. **Docker Files**: If microservice/monorepo, add from `templates/docker/{stack}/`
+3. **CI/CD**: Add GitLab CI from `templates/project-types/{project_type}/`
+4. **Helm**: If monorepo/delivery, add from `templates/project-types/{project_type}/helm/`
+5. **README**: Add common README template
 
-**Copied as-is** (no processing):
-- `Dockerfile`
-- `.gitignore` files
-- `.dockerignore`
-- `.helmignore`
-- Config files (settings.xml, .npmrc, pip.ini, nuget.config)
+## Benefits
 
-## Template Paths (S3 Structure)
-
-The template processor expects this S3 structure:
-- `templates/stacks/{stack}/` - Complete project structure per stack
-- `templates/project-types/{project_type}/{stack}.gitlab-ci.yml.j2` - CI/CD configs
-- `templates/docker/{stack}.Dockerfile` - Docker files (flat structure)
-- `templates/docker/.dockerignore` - Shared dockerignore
-- `templates/common/helm/` - Helm charts (monorepo/delivery)
-- `templates/common/README.md.j2` - Common README
-
-## Adding Templates
-
-1. **Create template files** with `.j2` suffix for Jinja2 processing
-2. **Use custom delimiters** `{% %}` and `{# #}` to avoid Helm conflicts
-3. **Upload to S3** in the expected structure
-4. **Test** with Repository Sculptor service
+- **Complete Scaffolding**: Every repo gets full project structure
+- **DRY Principle**: Dockerfiles shared across project types
+- **Flexible**: Easy to add new stacks or project types
+- **Discoverable**: Template processor auto-discovers files in S3
+- **Maintainable**: Clear separation of concerns

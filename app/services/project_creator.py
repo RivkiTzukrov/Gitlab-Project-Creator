@@ -24,11 +24,14 @@ class ProjectCreator:
             raise ValidationError(str(e))
 
         try:
+            template_variables = repo_request.get_template_variables()
+            
             # Generate template files
             files = await self.template_processor.get_project_files(
                 project_type=repo_request.project_type,
                 repo_name=repo_request.sanitized_name,
                 stack=repo_request.stack,
+                variables=template_variables
             )
 
             # Create repository
@@ -59,6 +62,8 @@ class ProjectCreator:
                 "message": "Project created successfully",
             }
 
+        except ValidationError:
+            raise
         except Exception as e:
             logger.error(f"Project creation failed: {str(e)}", exc_info=True)
             raise

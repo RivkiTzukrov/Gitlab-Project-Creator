@@ -2,7 +2,8 @@ import base64
 import logging
 from typing import Dict, List, Tuple
 
-import httpx
+from httpx import AsyncClient
+from json import JSONDecodeError
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError, GitLabAPIError
@@ -22,13 +23,16 @@ class GitLabService:
         all_groups = []
         page = 1
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        async with AsyncClient(timeout=self.timeout) as client:
             while True:
-                response = await client.get(
-                    f"{self.base_url}/groups",
-                    headers=self._get_headers(token),
-                    params={"page": page, "per_page": 100},
-                )
+                try:
+                    response = await client.get(
+                        f"{self.base_url}/groups",
+                        headers=self._get_headers(token),
+                        params={"page": page, "per_page": 100},
+                    )
+                except Exception as e:
+                    raise GitLabAPIError(f"Network error: {str(e)}", 500)
 
                 if response.status_code == 401:
                     raise AuthenticationError("Invalid access token")
@@ -48,8 +52,6 @@ class GitLabService:
 
                 page += 1
 
-
-
         return all_groups
 
     async def create_repository(self, token: str, repo_data: Dict) -> Tuple[str, int]:
@@ -60,7 +62,7 @@ class GitLabService:
             "initialize_with_readme": False,
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        async with AsyncClient(timeout=self.timeout) as client:
             response = await client.post(
                 f"{self.base_url}/projects",
                 headers=self._get_headers(token),
@@ -97,7 +99,7 @@ class GitLabService:
             "actions": actions,
         }
 
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
+        async with AsyncClient(timeout=self.timeout) as client:
             response = await client.post(
                 f"{self.base_url}/projects/{project_id}/repository/commits",
                 headers=self._get_headers(token),
@@ -113,15 +115,16 @@ class GitLabService:
     async def set_project_variables(
         self, token: str, project_id: int, variables: Dict[str, str]
     ) -> None:
-        for key, value in variables.items():
-            payload = {"key": key, "value": value, "protected": False, "masked": False}
+        async with AsyncClient(timeout=self.timeout) as client:
+            for key, value in variables.items():
+                payload = {"key": key, "value": value, "protected": False, "masked": False}
 
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/projects/{project_id}/variables",
                     headers=self._get_headers(token),
                     json=payload,
                 )
 
-            if response.status_code not in [201, 400]:  # 400 = already exists
-                logger.warning(f"Failed to set variable {key}")
+                if response.status_code not in [201, 400]:
+                    safe_key = key.replace('\n', '').replace('\r', '')[:50]
+                    logger.warning(f"Failed to set variable {safe_key}")

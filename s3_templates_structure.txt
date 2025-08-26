@@ -1,50 +1,103 @@
 s3://your-bucket/templates/
-  ├── common/
-  │   └── build/
-  │       ├── .dockerignore
-  │       └── Dockerfiles/
-  │           ├── maven.Dockerfile
-  │           ├── node.Dockerfile
-  │           ├── python.Dockerfile
-  │           └── dotnet.Dockerfile
-  │   ├── gitignore/
-  │   │   ├── maven.gitignore
-  │   │   ├── node.gitignore
-  │   │   ├── python.gitignore
-  │   │   ├── dotnet.gitignore
-  │   │   └── .gitignore
-  │   ├── configs/
-  │   │   ├── settings.xml
-  │   │   ├── .npmrc
-  │   │   ├── pip.ini
-  │   │   └── nuget.config
-  │   └── README.md.j2
-
-  ├── library/
-  │   ├── maven.gitlab-ci.yml
-  │   ├── node.gitlab-ci.yml
-  │   ├── python.gitlab-ci.yml
-  │   └── dotnet.gitlab-ci.yml
-  ├── microservice/
-  │   ├── maven.gitlab-ci.yml
-  │   ├── node.gitlab-ci.yml
-  │   ├── python.gitlab-ci.yml
-  │   └── dotnet.gitlab-ci.yml
-  ├── monorepo/
-  │   ├── maven.gitlab-ci.yml
-  │   ├── node.gitlab-ci.yml
-  │   ├── python.gitlab-ci.yml
-  │   ├── dotnet.gitlab-ci.yml
-  │   └── helm/
-  │       ├── Chart.yaml
-  │       └── values.yaml
-  └── delivery/
-      ├── .gitlab-ci.yml
-      └── helm/
-          ├── Chart.yaml
-          └── values.yaml
-
-# Hide acceess token in URL
-# Deployment cluster - add gitlab variables for cluster access token
-# What happen if the process of initializing a repo fails,
-  but the repo has already bean created?
+├── stacks/                           # Complete project structures per stack
+│   ├── maven/
+│   │   ├── pom.xml.j2               # Maven project file
+│   │   ├── src/
+│   │   │   ├── main/
+│   │   │   │   ├── java/
+│   │   │   │   │   └── com/
+│   │   │   │   │       └── example/
+│   │   │   │   │           └── Application.java.j2
+│   │   │   │   └── resources/
+│   │   │   │       └── application.yml.j2
+│   │   │   └── test/
+│   │   │       └── java/
+│   │   │           └── com/
+│   │   │               └── example/
+│   │   │                   └── ApplicationTest.java.j2
+│   │   ├── settings.xml             # Maven config
+│   │   └── maven.gitignore
+│   │
+│   ├── node/
+│   │   ├── package.json.j2          # Node.js project file
+│   │   ├── src/
+│   │   │   ├── index.js.j2          # Main entry point
+│   │   │   └── routes/
+│   │   │       └── health.js.j2     # Health check route
+│   │   ├── test/
+│   │   │   └── index.test.js.j2     # Basic test
+│   │   ├── .npmrc                   # NPM config
+│   │   └── node.gitignore
+│   │
+│   ├── python/
+│   │   ├── pyproject.toml.j2        # Python project file
+│   │   ├── requirements.txt.j2      # Dependencies
+│   │   ├── src/
+│   │   │   └── {% repo_name %}/     # Package directory (dynamic)
+│   │   │       ├── __init__.py
+│   │   │       └── main.py.j2       # Main module
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   └── test_main.py.j2      # Basic test
+│   │   ├── pip.ini                  # Pip config
+│   │   └── python.gitignore
+│   │
+│   └── dotnet/
+│       ├── {% repo_name %}.csproj.j2 # .NET project file
+│       ├── Program.cs.j2            # Main program
+│       ├── Controllers/
+│       │   └── HealthController.cs.j2 # Health endpoint
+│       ├── Properties/
+│       │   └── launchSettings.json.j2
+│       ├── Tests/
+│       │   ├── {% repo_name %}.Tests.csproj.j2
+│       │   └── UnitTest1.cs.j2      # Basic test
+│       ├── nuget.config             # NuGet config
+│       └── dotnet.gitignore
+│
+├── docker/                           # Dockerfiles by stack (same for all project types)
+│   ├── maven/
+│   │   ├── Dockerfile
+│   │   └── .dockerignore
+│   ├── node/
+│   │   ├── Dockerfile
+│   │   └── .dockerignore
+│   ├── python/
+│   │   ├── Dockerfile
+│   │   └── .dockerignore
+│   └── dotnet/
+│       ├── Dockerfile
+│       └── .dockerignore
+│
+├── project-types/                    # Project type specific files
+│   ├── library/
+│   │   ├── maven.gitlab-ci.yml.j2
+│   │   ├── node.gitlab-ci.yml.j2
+│   │   ├── python.gitlab-ci.yml.j2
+│   │   └── dotnet.gitlab-ci.yml.j2
+│   │
+│   ├── microservice/
+│   │   ├── maven.gitlab-ci.yml.j2
+│   │   ├── node.gitlab-ci.yml.j2
+│   │   ├── python.gitlab-ci.yml.j2
+│   │   └── dotnet.gitlab-ci.yml.j2
+│   │
+│   ├── monorepo/
+│   │   ├── maven.gitlab-ci.yml.j2
+│   │   ├── node.gitlab-ci.yml.j2
+│   │   ├── python.gitlab-ci.yml.j2
+│   │   ├── dotnet.gitlab-ci.yml.j2
+│   │   └── helm/
+│   │       ├── Chart.yaml.j2
+│   │       ├── values.yaml.j2
+│   │       └── .helmignore
+│   │
+│   └── delivery/
+│       ├── .gitlab-ci.yml.j2
+│       └── helm/
+│           ├── Chart.yaml.j2
+│           ├── values.yaml.j2
+│           └── .helmignore
+│
+└── common/
+    └── README.md.j2                 # Common README template
