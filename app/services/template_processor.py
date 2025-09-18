@@ -29,7 +29,12 @@ class TemplateProcessor:
         )
 
     async def get_project_files(self, project_type: str, repo_name: str, stack: Optional[Stack] = None) -> Dict[str, str]:
-        variables = {"repo_name": repo_name, "stack": stack.value if stack else "", "project_type": project_type}
+        variables = {
+            "repo_name": repo_name, 
+            "repo_title": repo_name.replace('-', ' ').title(),
+            "stack": stack.value if stack else "", 
+            "project_type": project_type
+        }
         files = {}
         
         if stack:

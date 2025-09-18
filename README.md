@@ -79,7 +79,7 @@ curl -H "Authorization: Bearer <token>" http://localhost:8000/groups
 |------|-------------|-------------|
 | `library` | Code library | `stack` |
 | `microservice` | Standalone service | `stack` |
-| `monorepo` | Multi-service repo | `clusters` |
+| `monorepo` | Multi-service repo | `stack`, `clusters` |
 | `delivery` | Deployment config | `clusters` |
 
 ## Template System

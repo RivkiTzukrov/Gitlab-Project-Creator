@@ -1,0 +1,20 @@
+# Add this to your templates repository .gitlab-ci.yml
+
+stages:
+  - validate
+  - update-examples
+
+update-examples:
+  stage: update-examples
+  image: alpine:latest
+  only:
+    - main  # Only run on main branch changes
+  before_script:
+    - apk add --no-cache curl bash
+  script:
+    - chmod +x update_examples.sh
+    - ./update_examples.sh
+  variables:
+    GITLAB_TOKEN: $GITLAB_ADMIN_TOKEN
+    EXAMPLES_GROUP_ID: $EXAMPLES_GROUP_ID
+    BACKEND_SERVICE_URL: $BACKEND_SERVICE_URL
